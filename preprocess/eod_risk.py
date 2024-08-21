@@ -90,7 +90,7 @@ class EOD_Preprocessor:
             # print(selected_EOD_str)
             selected_EOD = self._transfer_EOD_str(selected_EOD_str,
                                                   tra_dates_index)
-            print(selected_EOD)
+            # print(selected_EOD)
             # print(selected_EOD.shape[0])
             # return
             # calculate moving average features
@@ -101,7 +101,7 @@ class EOD_Preprocessor:
                     begin_date_row = row
                     break
             mov_aver_features = np.zeros(
-                [selected_EOD.shape[0], 9], dtype=float
+                [selected_EOD.shape[0], 4], dtype=float
                 # [selected_EOD.shape[0], 4], dtype=float
             )   # 4 columns refers to 5-, 10-, 20-, 30-days average
             for row in range(begin_date_row, selected_EOD.shape[0]):
@@ -140,6 +140,7 @@ class EOD_Preprocessor:
             '''
             pri_min = np.min(selected_EOD[begin_date_row:, 4])
             price_max = np.max(selected_EOD[begin_date_row:, 4])
+            target_max = np.max(selected_EOD[begin_date_row:, 8])
             print(self.tickers[stock_index], 'minimum:', pri_min,
                   'maximum:', price_max, 'ratio:', price_max / pri_min)
             if price_max / pri_min > 10:
@@ -147,15 +148,15 @@ class EOD_Preprocessor:
             # open_high_low = (selected_EOD[:, 1:4] - price_min) / \
             #                 (price_max - price_min)
             mov_aver_features = mov_aver_features / price_max
-            for row in range(begin_date_row, selected_EOD.shape[0]):
-                date_index = selected_EOD[row][0]
-                mov_aver_features[row][4] = selected_EOD[row][6]
-                mov_aver_features[row][5] = selected_EOD[row][7]
-                mov_aver_features[row][6] = selected_EOD[row][8]
-                mov_aver_features[row][7] = selected_EOD[row][9]
-                mov_aver_features[row][8] = selected_EOD[row][10]
-                print(mov_aver_features[row])
-                print(selected_EOD[row])
+            # for row in range(begin_date_row, selected_EOD.shape[0]):
+            #     date_index = selected_EOD[row][0]
+            #     mov_aver_features[row][4] = selected_EOD[row][6]
+            #     mov_aver_features[row][5] = selected_EOD[row][7]
+            #     mov_aver_features[row][6] = selected_EOD[row][8]
+            #     mov_aver_features[row][7] = selected_EOD[row][9]
+            #     mov_aver_features[row][8] = selected_EOD[row][10]
+            #     print(mov_aver_features[row])
+            #     print(selected_EOD[row])
 
             '''
                 generate feature and ground truth in the following format:
@@ -163,7 +164,7 @@ class EOD_Preprocessor:
                 two ways to pad missing dates:
                 for dates without record, pad a row [date_index, -1234 * 5]
             '''
-            features = np.ones([len(trading_dates) - pad_begin, 11],
+            features = np.ones([len(trading_dates) - pad_begin, 6],
                                dtype=float) * -1234
             # data missed at the beginning
             print(mov_aver_features)
@@ -174,11 +175,11 @@ class EOD_Preprocessor:
                 # print(row)
                 cur_index = int(selected_EOD[row][0])
                 # print(mov_aver_features[row])
-                features[cur_index - pad_begin][1:10] = mov_aver_features[row]
+                features[cur_index - pad_begin][1:5] = mov_aver_features[row]
                 if cur_index - int(selected_EOD[row - return_days][0]) == \
                         return_days:
                     features[cur_index - pad_begin][-1] = \
-                        selected_EOD[row][4] / price_max
+                        selected_EOD[row][8] / target_max
 
             # write out
             print(os.path.join(opath, self.market_name + '_' +
@@ -200,7 +201,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.path is None:
-        args.path = '../data/google_finance'
+        args.path = '../data/google_finance_risk'
     if args.market is None:
         args.market = 'NASDAQ'
 
